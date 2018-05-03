@@ -8,7 +8,7 @@ ADDR = memory._getAddress_dict(pid=pid)
 print(hex(ADDR['mob_num']))
 target_func = b'\x8B\x80\xD4\x02\x00\x00\x85\xC0\x74\x04\x83\xC0\xEC\xC3\x33\xC0'
 print(hex(memory._getAddress_from_bytes(target_func, pid=pid)))
-my_target_func = b''
+my_target_func = b'\x8B\x80\xD4\x02\x00\x00\x85\xC0\x74\x0B\x83\xC0\xEC\x90\x90\x90\x90\x90\x90\x90\xC3\x90\x90\xC3'
 #Апроксимация: погрешность +- 3 м.
 def _convert_cord(cord):
     del1 = 1049986912
