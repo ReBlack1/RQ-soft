@@ -52,17 +52,39 @@ def _getAddress(move_list, pid=None):
 """
 Input: INT-type address of value!
 """
-def _getValue_In_Address(address, pid=None):
+def _getValue_In_Address(address, pid=None, buffer_size = 4):
     if pid == None:
         pid = _get_pid('rqmain.exe')
     PROCESS_VM_READ = 0x0010
-    buffer_size = 4
     buffer = ctypes.create_string_buffer(buffer_size)
     process = windll.kernel32.OpenProcess(PROCESS_VM_READ,0,pid)
     reader_memory = windll.kernel32.ReadProcessMemory
 
     if reader_memory(process, address, buffer, buffer_size, 0):
             return int.from_bytes(buffer.raw, byteorder='little')
+
+#Возвращает адрес первой такой функции
+def _getAddress_from_bytes(_bytes, pid = None, buffer_size = None):
+    if pid == None:
+        pid = _get_pid('rqmain.exe')
+    if buffer_size == None:
+        buffer_size = len(_bytes)
+    base_address = pymem.process.base_address(pid)
+    PROCESS_VM_READ = 0x0010
+    buffer = ctypes.create_string_buffer(100000000)
+    process = windll.kernel32.OpenProcess(PROCESS_VM_READ,0,pid)
+    reader_memory = windll.kernel32.ReadProcessMemory
+    reader_memory(process, base_address, buffer, 100000000, 0)
+    move = buffer.raw.find(_bytes)
+    if move != -1:
+        return base_address + move
+##    for i in range(1000):
+##        address = base_address + i * 1000000
+##        reader_memory(process, address, buffer, 1000000 + buffer_size, 0)
+##        move = buffer.value.find(_bytes)
+##        if move != -1:
+####            print(buffer.value[move:])
+##            return (i * 1000000 + move)
 
 def get_move_dict():
     MOVE_DICTIONARY = {
