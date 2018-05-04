@@ -19,6 +19,14 @@ def _get_pid(proc_name = 'rqmain.exe'):
             return proc.pid
     return None
 
+def find_all(a_str, sub):
+    start = 0
+    while True:
+        start = a_str.find(sub, start)
+        if start == -1: return
+        yield start
+        start += len(sub)
+
 def convert_base(num, to_base=10, from_base=10):
     # first convert to decimal number
     if isinstance(num, str):
@@ -78,13 +86,27 @@ def _getAddress_from_bytes(_bytes, pid = None, buffer_size = None):
     move = buffer.raw.find(_bytes)
     if move != -1:
         return base_address + move
-##    for i in range(1000):
-##        address = base_address + i * 1000000
-##        reader_memory(process, address, buffer, 1000000 + buffer_size, 0)
-##        move = buffer.value.find(_bytes)
-##        if move != -1:
-####            print(buffer.value[move:])
-##            return (i * 1000000 + move)
+
+def _getAddress_from_bytesEx(_bytes, pid = None, buffer_size = None):
+    if pid == None:
+        pid = _get_pid('rqmain.exe')
+    if buffer_size == None:
+        buffer_size = len(_bytes)
+    ret_list = []
+    base_address = pymem.process.base_address(pid)
+    PROCESS_VM_READ = 0x0010
+    buffer = ctypes.create_string_buffer(100000000)
+    process = windll.kernel32.OpenProcess(PROCESS_VM_READ,0,pid)
+    reader_memory = windll.kernel32.ReadProcessMemory
+    for i in range(25):
+        reader_memory(process, base_address+i*100000000, buffer, 100000000, 0)
+        lmove = buffer.raw.find(_bytes)
+        rmove = buffer.raw.rfind(_bytes)
+        if lmove != -1:
+            ret_list.append( base_address + lmove + i * 100000000)
+            if rmove != -1 and rmove != lmove:
+                ret_list.append( base_address + rmove + i * 100000000)
+    return ret_list
 
 def get_move_dict():
     MOVE_DICTIONARY = {

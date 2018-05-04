@@ -29,7 +29,7 @@ def _pred_proc(pid=None, ADDR=None):
 def _kill_id(ADDR, BASE, id, pid=None):
     if pid == None:
         pid = memory._get_pid('rqmain.exe')
-    target_func_addr = ADDR['target_func'] + 0xA
+    target_func_addr = ADDR['target_func'] + 0xA #Cмещение до цели таргета
     my_target_addr = ADDR['my_person_base'] + BASE['target']
     mov = b'\xB8'
     if type(id) == int:
@@ -40,17 +40,31 @@ def _kill_id(ADDR, BASE, id, pid=None):
     memory._write_to_address(target_func_addr, new_tagret, 5, pid=pid)
     return True
 
-def _save_id(ADDR, BASE, id, pid=None):
+def _save_id(ADDR, BASE, pid=None):
     if pid == None:
         pid = memory._get_pid('rqmain.exe')
     old_target = b'\x83\xC0\xEC\x90\x90'
     target_func_addr = ADDR['target_func'] + 0xA
     my_target_addr = ADDR['my_person_base'] + BASE['target']
-
+    my_id = ADDR['my_person_base'] + BASE['id']
+##    memory._write_to_address(my_target_addr, my_id, pid=pid)
+    memory._write_to_address(target_func_addr, old_target, 5, pid)
+    memory._write_to_address(my_target_addr, b'\x00\x00\x00\x00', pid=pid)
 
 
 pid = memory._get_pid()
 ADDR = _pred_proc(pid)
 BASE = memory.get_move_obj()
+mob_bases = memory._getAddress_from_bytesEx(b'\x7C\x3B\x8F\x01', pid, 4)
+##print(hex(mob_bases))
+for i in mob_bases:
+    print(hex(i))
 exit()
-_kill_id(ADDR, BASE, 0x3B0F074, pid)
+
+my_id = ADDR['my_person_base'] + BASE['id']
+my_target_addr = ADDR['my_person_base'] + BASE['target']
+print(hex(my_target_addr))
+
+exit()
+_kill_id(ADDR, BASE, my_id, pid)
+_save_id(ADDR, BASE, pid)
