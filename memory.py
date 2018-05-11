@@ -72,11 +72,10 @@ def _getValue_In_Address(address, pid=None, buffer_size = 4):
             return int.from_bytes(buffer.raw, byteorder='little')
 
 #Возвращает адрес первой такой функции
-def _getAddress_from_bytes(_bytes, pid = None, buffer_size = None):
+def _getAddress_from_bytes(_bytes, pid = None):
     if pid == None:
         pid = _get_pid('rqmain.exe')
-    if buffer_size == None:
-        buffer_size = len(_bytes)
+    buffer_size = len(_bytes)
     base_address = pymem.process.base_address(pid)
     PROCESS_VM_READ = 0x0010
     buffer = ctypes.create_string_buffer(100000000)
@@ -86,26 +85,42 @@ def _getAddress_from_bytes(_bytes, pid = None, buffer_size = None):
     move = buffer.raw.find(_bytes)
     if move != -1:
         return base_address + move
-
-def _getAddress_from_bytesEx(_bytes, pid = None, buffer_size = None):
+#Мб попробовать numpy массивы
+#Учесть кучность (???)
+#Сделать генератором, а не массиом
+#Автоподбор размера буфера по производительности
+def _getAddress_from_bytesEx(_bytes, pid = None, max_len = 10, buffer_size = 200000):
     if pid == None:
         pid = _get_pid('rqmain.exe')
-    if buffer_size == None:
-        buffer_size = len(_bytes)
     ret_list = []
     base_address = pymem.process.base_address(pid)
     PROCESS_VM_READ = 0x0010
-    buffer = ctypes.create_string_buffer(100000000)
+    buffer = ctypes.create_string_buffer(buffer_size)
     process = windll.kernel32.OpenProcess(PROCESS_VM_READ,0,pid)
     reader_memory = windll.kernel32.ReadProcessMemory
-    for i in range(25):
-        reader_memory(process, base_address+i*100000000, buffer, 100000000, 0)
-        lmove = buffer.raw.find(_bytes)
-        rmove = buffer.raw.rfind(_bytes)
-        if lmove != -1:
-            ret_list.append( base_address + lmove + i * 100000000)
-            if rmove != -1 and rmove != lmove:
-                ret_list.append( base_address + rmove + i * 100000000)
+    move_sub = base_address + 0x10000000
+    move = 0
+    count = 0
+    up_checker = base_address + 1000000000
+    while move_sub < up_checker:
+##        print(move_sub)
+##        st = time.time()
+        reader_memory(process, LPVOID(move_sub), buffer, buffer_size, 0)
+##        count += 1
+        move = buffer.raw.find(_bytes)
+
+        if move == -1:
+            move_sub += buffer_size
+        else:
+            move_sub += move
+            ret_list.append(move_sub)
+            move_sub += 1
+
+        if len(ret_list) >= max_len:
+##            print(count, "count")
+            return ret_list
+##        print(time.time()-st, 'такт')
+
     return ret_list
 
 def get_move_dict():
